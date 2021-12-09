@@ -1,44 +1,59 @@
-from math import *
+import numpy as np
 
-# read sample files
+class DataAnalyzer:
+    def __init__(self, data1, data2, weights, results):
+        self.data1 = data1
+        self.data2 = data2
+        self.weights = weights
+        self.results = results
+    
+    def get_number_of_critial_values(self):
+        number_of_critial_values = np.count_nonzero(self.results > 5)
+        if number_of_critial_values == 1:
+            print("criticality: 1 result above 5")
+        else:
+            print(f"criticality: {number_of_critial_values} results above 5")
 
-with open('data1.csv') as file1:
-    lines1 = file1.readlines()
-    data1 = []
-    for line in lines1:
-        row = []
-        for n in line.split(','):
-            row.append(float(n.strip()))
-        data1.append(row)
+    def get_d_index(self):
+        print(f"d-index: {np.average(self.results)}")
 
-with open('data2.csv') as file2:
-    lines2 = file2.readlines()
-    data2 = []
-    for line in lines2:
-        row = []
-        for n in line.split(','):
-            row.append(float(n.strip()))
-        data2.append(row)
+class DataAnalyzerBuilder:
+    def __init__(self, path_data1, path_data2, path_weights):
+        self.dataAnalyzer = DataAnalyzer()
 
-with open('weights.csv') as filew:
-    linew = filew.read()
-    w = []
-    for n in linew.split(','):
-        w.append(float(n.strip()))
+        self.path_data1 = path_data1
+        self.path_data2 = path_data2
+        self.path_weights = path_weights
 
-results = []
-for i in range(len(data1)):
-    s = 0
-    for j in range(len(w)):
-        d = data1[i][j] - data2[i][j]
-        s += w[j] * abs(d)
-    results.append(s)
+        self.data1 = None
+        self.data2 = None
+        self.weights = None
 
-critical = 0
-for i in range(len(results)):  # for all i
-    if results[i] > 5:
-        critical = critical + 1  # increase by 1
-if critical == 1:
-    print("criticality: 1 result above 5")
-else:
-    print("criticality:", critical, "results above 5")
+        self.results = None
+
+    def load_data(self):
+        self.data1 = np.loadtxt(self.path_data1, delimiter = ',')
+        self.data2 = np.loadtxt(self.path_data2, delimiter = ',')
+        self.weights = np.loadtxt(self.path_weights, delimiter = ',')
+
+        # Dimensions are assumed to be compatible
+
+    def get_results(self):
+        self.results = np.abs(self.data1 - self.data2) @ self.weights
+
+    def validate(self):
+        assert(self.data1 is not None)
+        assert(self.data2 is not None)
+        assert(self.weights is not None)
+        assert(self.results is not None)
+
+    def finish(self):
+        self.validate()
+        return self.dataAnalyzer
+
+if __name__ == "__main__":
+    dataAnalyzerBuilder = DataAnalyzerBuilder('data1.csv', 'data2.csv', 'weights.csv')
+    dataAnalyzerBuilder.load_data()
+    dataAnalyzerBuilder.get_results()
+    dataAnalyzer = dataAnalyzerBuilder.finish()
+    dataAnalyzer.get_number_of_critial_values()
